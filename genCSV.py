@@ -4,6 +4,7 @@ import irmaDBCredentials
 import MySQLdb
 import os
 import csv
+import sys
 
 arch = "x86"
 version = "4.13.3"
@@ -32,52 +33,55 @@ def scanConfig(config):
     name = ""
     value = ""
     while cursor < s:
+        c = config[cursor]
         if state == 0:
-            if config[cursor] == '#':
+            if c == '#':
                 state = 1
-            elif not isWhitespace(config[cursor]):
+            elif not isWhitespace(c):
                 state = 2
-                name = ""
+                name = c
         elif state == 1:
-            if config[cursor] == '\n':
+            if c == '\n':
                 state = 0
         elif state == 2:
-            if config[cursor] != '=':
-                name += config[cursor]
+            if c != '=':
+                name += c
             else:
                 state = 3
                 value = ""
         elif state == 3:
-            if config[cursor] != '\n':
-                value += config[cursor]
+            if c != '\n':
+                value += c
             else:
-                props[name] = value
+                props[name[7:]] = value
                 state = 0
         cursor += 1
     if state == 2: raise ValueError("Incomplete .config file")
     return props
 
 if __name__ == "__main__":
-    tty = open("/dev/tty", mode='w')
+
+    if len(sys.argv) < 2:
+        print("No output file specified")
 
     try:
-        print("Connecting to db...", file=tty, end="", flush=True)
+        print("Connecting to db...", end="", flush=True)
         conn = MySQLdb.connect(**irmaDBCredentials.info)
         cursor = conn.cursor()
 
         get_prop = "SELECT name, type FROM Properties INNER JOIN Arch INNER JOIN Version where arch_name = %s AND version_name = %s"
         query = "SELECT cid, config_file, core_size, compilation_time FROM TuxML WHERE compilation_time > -1"
 
-        print("Done\nMaking request...", file=tty, end="", flush=True)
+        print("Done\nMaking request...", end="", flush=True)
         cursor.execute(get_prop, (arch, version))
         types_results = cursor.fetchall()
 
         cursor.execute(query)
         results = cursor.fetchall()
 
-        print("Columns : " + str(len(types_results)) + "; Lines = " + str(len(results)), file=tty, flush=True)
+        print("Columns : " + str(len(types_results)) + "; Lines = " + str(len(results)), flush=True)
         cursor.close()
-        print("Done\nFilling default values...", file=tty, end="", flush=True)
+        print("Done\nFilling default values...", end="", flush=True)
 
         defaults = {}
 
@@ -87,38 +91,40 @@ if __name__ == "__main__":
         defaults["KERNEL_SIZE"] = 0
         defaults["COMPILE_TIME"] = 0
 
-        print("Done\nPrinting header...", file=tty, end="", flush=True)
+        print("Done\nPrinting header...", end="", flush=True)
 
+        csvfile = open(sys.argv[1], 'w')
+
+        fieldnames = []
         for (k,v) in defaults.items():
-            print(k + ",", end="")
-        print("")
+            fieldnames.append(k)
+
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
 
         bad_files = []
 
-        print("Done\nPrinting rows", file=tty, end="", flush=True)
+        print("Done\nPrinting rows", end="", flush=True)
         for num, (cid, config_file, core_size, compilation_time) in enumerate(results):
             try:
                 props = scanConfig(config_file)
                 values = dict(defaults)
-                print(len(values), file=tty)
                 values["KERNEL_SIZE"] = core_size
                 values["COMPILE_TIME"] = compilation_time
                 for (k,v) in props.items():
                     values[k] = v
-                for (k,v) in values.items():
-                    print(str(v) + ",", end="")
-                print("")
-                print("\rPrinting rows ({}/{})".format(num+1, len(results)), file=tty, end="", flush=True)
+                writer.writerow(values);
+                print("\rPrinting rows ({}/{})".format(num+1, len(results)), end="", flush=True)
             except ValueError as e:
                 bad_files.append((cid, str(e)))
-        print("", file=tty)
+        print("")
         if len(bad_files) > 0:
-            print("Bad .configs : ", file=tty)
+            print("Bad .configs : ")
             for file in bad_files:
-                print("id = {}, error = {}".format(file[0], file[1]), file=tty)
+                print("id = {}, error = {}".format(file[0], file[1]))
 
     except MySQLdb.Error as err:
-        print("\nError : Can't read from db : {}".format(err.args[1]), file=tty)
+        print("\nError : Can't read from db : {}".format(err.args[1]))
         exit(-1)
     finally:
         conn.close()
