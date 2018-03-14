@@ -75,6 +75,7 @@ if __name__ == "__main__":
         cursor.execute(query)
         results = cursor.fetchall()
 
+        print("Columns : " + str(len(types_results)) + "; Lines = " + str(len(results)), file=tty, flush=True)
         cursor.close()
         print("Done\nFilling default values...", file=tty, end="", flush=True)
 
@@ -99,16 +100,17 @@ if __name__ == "__main__":
             try:
                 props = scanConfig(config_file)
                 values = dict(defaults)
+                print(len(values), file=tty)
                 values["KERNEL_SIZE"] = core_size
                 values["COMPILE_TIME"] = compilation_time
                 for (k,v) in props.items():
                     values[k] = v
                 for (k,v) in values.items():
                     print(str(v) + ",", end="")
+                print("")
                 print("\rPrinting rows ({}/{})".format(num+1, len(results)), file=tty, end="", flush=True)
             except ValueError as e:
                 bad_files.append((cid, str(e)))
-        print("")
         print("", file=tty)
         if len(bad_files) > 0:
             print("Bad .configs : ", file=tty)
