@@ -12,7 +12,7 @@ version = "4.13.3"
 default_values = {
     "UNKNOWN":"0",
     "INT":"0",
-    "HEX":"0",
+    "HEX":"0x0",
     "STRING":"\"\"",
     "TRISTATE":"n",
     "BOOL":"n",
