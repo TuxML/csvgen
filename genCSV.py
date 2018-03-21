@@ -16,6 +16,7 @@ default_values = {
     "STRING":"\"\"",
     "TRISTATE":"n",
     "BOOL":"n",
+    "FLOAT":"0.0"
 }
 
 def isWhitespace(c):
@@ -90,24 +91,28 @@ if __name__ == "__main__":
 
         # Header
         cursor.execute(get_prop, (arch, version))
-        types_results = cursor.fetchall()
-        defaults = {}
-        types = {}
+        types_results = list(cursor.fetchall())
+        types_results.append(("KERNEL_SIZE", "INT"))
+        types_results.append(("COMPILE_TIME", "FLOAT"))
+        defaults = [0]*len(types_results)
+        types = [0]*len(types_results)
+        order = {}
+        index = 0
         for (name, typ) in types_results:
-            defaults[name] = default_values[typ]
-            types[name] = typ
-        defaults["KERNEL_SIZE"] = 0
-        types["KERNEL_SIZE"] = "INT"
-        defaults["COMPILE_TIME"] = 0
-        types["COMPILE_TIME"] = "FLOAT"
+            order[name] = index
+            defaults[index] = default_values[typ]
+            types[index] = typ
+            index += 1
+        order_kernel_size = order["KERNEL_SIZE"]
+        order_compile_time = order["COMPILE_TIME"]
         # Row count
         cursor.execute(count_rows)
         row_count = cursor.fetchone()[0]
         # File
         csvfile = open(sys.argv[1], 'w')
         writer = csv.writer(csvfile)
-        writer.writerow(defaults.keys())
-        writer.writerow(types.values())
+        writer.writerow(defaults)
+        writer.writerow(types)
 
         print("Done\nFilling rows :")
 
@@ -124,12 +129,12 @@ if __name__ == "__main__":
             for num, (cid, config_file, core_size, compilation_time) in enumerate(results):
                 try:
                     props = scanConfig(config_file)
-                    values = dict(defaults)
-                    values["KERNEL_SIZE"] = core_size
-                    values["COMPILE_TIME"] = compilation_time
+                    values = list(defaults)
+                    values[order_kernel_size] = core_size
+                    values[order_compile_time] = compilation_time
                     for (k,v) in props.items():
-                        values[k] = v
-                    writer.writerow(values.values());
+                        values[order[k]] = v
+                    writer.writerow(values);
                 except ValueError as e:
                     bad_files.append((cid, str(e)))
 
