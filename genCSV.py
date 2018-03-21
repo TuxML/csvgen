@@ -92,20 +92,22 @@ if __name__ == "__main__":
         cursor.execute(get_prop, (arch, version))
         types_results = cursor.fetchall()
         defaults = {}
+        types = {}
         for (name, typ) in types_results:
             defaults[name] = default_values[typ]
+            types[name] = typ
         defaults["KERNEL_SIZE"] = 0
+        types["KERNEL_SIZE"] = "INT"
         defaults["COMPILE_TIME"] = 0
-        fieldnames = []
-        for (k,v) in defaults.items():
-            fieldnames.append(k)
+        types["COMPILE_TIME"] = "FLOAT"
         # Row count
         cursor.execute(count_rows)
         row_count = cursor.fetchone()[0]
         # File
         csvfile = open(sys.argv[1], 'w')
         writer = csv.writer(csvfile)
-        writer.writerow(fieldnames)
+        writer.writerow(defaults.keys())
+        writer.writerow(types.values())
 
         print("Done\nFilling rows :")
 
