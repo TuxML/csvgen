@@ -59,6 +59,18 @@ def scanConfig(config):
     if state == 2: raise ValueError("Incomplete .config file")
     return props
 
+def printProgress(p):
+    if p > 100: p = 100
+    if p < 0: p = 0
+    progress = p/5
+    print("\rProgression: [", end="", flush=True)
+    for i in range(int(progress)):
+        print("#", end="", flush=True)
+    for i in range(int(progress), 20):
+        print("-", end="", flush=True)
+    print("] " + str(int(p)) + "%", end="", flush=True)
+
+
 if __name__ == "__main__":
 
     if len(sys.argv) < 2:
@@ -69,59 +81,67 @@ if __name__ == "__main__":
         conn = MySQLdb.connect(**irmaDBCredentials.info)
         cursor = conn.cursor()
 
+        offset = 0
+        step = 50
         get_prop = "SELECT name, type FROM Properties INNER JOIN Arch INNER JOIN Version where arch_name = %s AND version_name = %s"
-        query = "SELECT cid, config_file, core_size, compilation_time FROM TuxML WHERE compilation_time > -1"
+        query = "SELECT cid, config_file, core_size, compilation_time FROM TuxML WHERE compilation_time > -1 ORDER BY cid LIMIT %s OFFSET %s"
+        count_rows = "SELECT COUNT(*) FROM TuxML WHERE compilation_time > -1"
+        end = False;
 
-        print("Done\nMaking request...", end="", flush=True)
+        # Header
         cursor.execute(get_prop, (arch, version))
         types_results = cursor.fetchall()
-
-        cursor.execute(query)
-        results = cursor.fetchall()
-
-        print("Columns : " + str(len(types_results)) + "; Lines = " + str(len(results)), flush=True)
-        cursor.close()
-        print("Done\nFilling default values...", end="", flush=True)
-
         defaults = {}
-
         for (name, typ) in types_results:
             defaults[name] = default_values[typ]
-
         defaults["KERNEL_SIZE"] = 0
         defaults["COMPILE_TIME"] = 0
-
-        print("Done\nPrinting header...", end="", flush=True)
-
-        csvfile = open(sys.argv[1], 'w')
-
         fieldnames = []
         for (k,v) in defaults.items():
             fieldnames.append(k)
+        # Row count
+        cursor.execute(count_rows)
+        row_count = cursor.fetchone()[0]
+        # File
+        csvfile = open(sys.argv[1], 'w')
+        writer = csv.writer(csvfile)
+        writer.writerow(fieldnames)
 
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
+        print("Done\nFilling rows :")
 
         bad_files = []
 
-        print("Done\nPrinting rows", end="", flush=True)
-        for num, (cid, config_file, core_size, compilation_time) in enumerate(results):
-            try:
-                props = scanConfig(config_file)
-                values = dict(defaults)
-                values["KERNEL_SIZE"] = core_size
-                values["COMPILE_TIME"] = compilation_time
-                for (k,v) in props.items():
-                    values[k] = v
-                writer.writerow(values);
-                print("\rPrinting rows ({}/{})".format(num+1, len(results)), end="", flush=True)
-            except ValueError as e:
-                bad_files.append((cid, str(e)))
+        while not end:
+            printProgress(100*offset/row_count)
+            cursor.execute(query, (step, offset))
+            results = cursor.fetchall()
+            if len(results) == 0:
+                end = True
+                break
+
+            for num, (cid, config_file, core_size, compilation_time) in enumerate(results):
+                try:
+                    props = scanConfig(config_file)
+                    values = dict(defaults)
+                    values["KERNEL_SIZE"] = core_size
+                    values["COMPILE_TIME"] = compilation_time
+                    for (k,v) in props.items():
+                        values[k] = v
+                    writer.writerow(values.values());
+                except ValueError as e:
+                    bad_files.append((cid, str(e)))
+
+            offset += step
+
+        cursor.close()
+        printProgress(100)
+
         print("")
         if len(bad_files) > 0:
             print("Bad .configs : ")
             for file in bad_files:
                 print("id = {}, error = {}".format(file[0], file[1]))
+        print("CSV file generated at " + sys.argv[1])
 
     except MySQLdb.Error as err:
         print("\nError : Can't read from db : {}".format(err.args[1]))
