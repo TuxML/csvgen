@@ -5,6 +5,7 @@ import MySQLdb
 import os
 import csv
 import sys
+import bz2
 
 arch = "x86"
 version = "4.13.3"
@@ -22,7 +23,8 @@ default_values = {
 def isWhitespace(c):
     return c==' ' or c=='\t' or c=='\n'
 
-def scanConfig(config):
+def scanConfig(bz2config):
+    config = bz2.decompress(bz2config).decode('ascii')
     props = {}
     cursor = 0
     s = len(config)
@@ -57,7 +59,7 @@ def scanConfig(config):
                 props[name[7:]] = value
                 state = 0
         cursor += 1
-    if state == 2: raise ValueError("Incomplete .config file")
+    if state == 2: raise ValueError("Incomplete .config file : " + str(props))
     return props
 
 def printProgress(p):
@@ -80,14 +82,14 @@ if __name__ == "__main__":
 
     try:
         print("Connecting to db...", end="", flush=True)
-        conn = MySQLdb.connect(**irmaDBCredentials.info)
+        conn = MySQLdb.connect(**irmaDBCredentials.info_v2)
         cursor = conn.cursor()
 
         offset = 0
         step = 50
         get_prop = "SELECT name, type FROM Properties INNER JOIN Arch INNER JOIN Version where arch_name = %s AND version_name = %s"
-        query = "SELECT cid, config_file, core_size, compilation_time FROM TuxML WHERE compilation_time > -1 ORDER BY cid LIMIT %s OFFSET %s"
-        count_rows = "SELECT COUNT(*) FROM TuxML WHERE compilation_time > -1"
+        query = "SELECT cid, config_file, core_size, compilation_time FROM Compilations WHERE compilation_time > -1 ORDER BY cid LIMIT %s OFFSET %s"
+        count_rows = "SELECT COUNT(*) FROM Compilations WHERE compilation_time > -1"
         end = False;
 
         # Header
