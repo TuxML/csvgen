@@ -13,7 +13,7 @@ default_values = {
     "UNKNOWN":"0",
     "INT":"0",
     "HEX":"0x0",
-    "STRING":"\"\"",
+    "STRING":None,
     "TRISTATE":"n",
     "BOOL":"n",
     "FLOAT":"0.0"
