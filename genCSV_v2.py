@@ -14,7 +14,7 @@ default_values = {
     "UNKNOWN":"0",
     "INT":"0",
     "HEX":"0x0",
-    "STRING":"\"\"",
+    "STRING":None,
     "TRISTATE":"n",
     "BOOL":"n",
     "FLOAT":"0.0"
@@ -56,6 +56,9 @@ def scanConfig(bz2config):
             if c != '\n':
                 value += c
             else:
+                # remove quotes
+                if value[0] == '"' and value[-1] == '"': value = value[1:-1]
+                # set in dict and remove leading "CONFIG_" in name
                 props[name[7:]] = value
                 state = 0
         cursor += 1

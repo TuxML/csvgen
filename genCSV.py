@@ -54,6 +54,9 @@ def scanConfig(config):
             if c != '\n':
                 value += c
             else:
+                # remove quotes
+                if value[0] == '"' and value[-1] == '"': value = value[1:-1]
+                # set in dict and remove leading "CONFIG_" in name
                 props[name[7:]] = value
                 state = 0
         cursor += 1
