@@ -102,14 +102,12 @@ if __name__ == "__main__":
         types_results.append(("COMPILE_TIME", "FLOAT"))
         names = [""]*len(types_results)
         defaults = [0]*len(types_results)
-        types = [0]*len(types_results)
         order = {}
         index = 0
         for (name, typ) in types_results:
             order[name] = index
             names[index] = name
             defaults[index] = default_values[typ]
-            types[index] = typ
             index += 1
         order_kernel_size = order["KERNEL_SIZE"]
         order_compile_time = order["COMPILE_TIME"]
@@ -120,7 +118,6 @@ if __name__ == "__main__":
         csvfile = open(sys.argv[1], 'w')
         writer = csv.writer(csvfile)
         writer.writerow(names)
-        writer.writerow(types)
 
         print("Done\nFilling rows :")
 
