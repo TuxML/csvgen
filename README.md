@@ -14,4 +14,13 @@ Extracts data from the database filled by [ProjetIrma](https://github.com/TuxML/
 
 ## Usage
 
-    ./genCSV.py > file.csv
+To get results from both IrmaDB databases :
+
+    ./genCSV output.csv
+
+To get results from one of the IrmaDB database :
+
+    ./genCSV_v1.py output.csv
+    ./genCSV_v2.py output.csv
+
+To get your own results : add entries in DBCredentials.py to match your databases and create a new script following either genCSV_v1.py or genCSV_v2.py.
