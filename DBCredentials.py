@@ -1,4 +1,4 @@
-irmaDB_v1 = {
+db = [{
     "creds":{ # Credentials for DB connection
         "user":"csvgen", # User name
         "passwd":"yHGE0Km4bxxKoYdb", # User password
@@ -7,8 +7,7 @@ irmaDB_v1 = {
     },
     "bz2":False, # Whether .config are bzipped
     "table":"TuxML" # Table name for compilations
-}
-irmaDB_v2 = {
+},{
     "creds":{
         "user":"csvgen",
         "passwd":"yHGE0Km4bxxKoYdb",
@@ -17,4 +16,4 @@ irmaDB_v2 = {
     },
     "bz2":True,
     "table":"Compilations"
-}
+}]
