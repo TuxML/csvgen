@@ -3,10 +3,9 @@
 # @author Pierre Le Luron
 # @copyright Apache License 2.0
 # @brief Base functions for CSV generation
-# @details Functions necessary for CSV generation from a TuxML database to feed the ML on 
+# @details Functions necessary for CSV generation from a TuxML database to feed the ML on
 
 import MySQLdb
-import os
 import csv
 import bz2
 import sys
@@ -30,7 +29,7 @@ def isWhitespace(c):
 
 ## Extracts .config data and populates a dict (property name without prefix "CONFIG_" as key)
 # @param configdata .config data (raw or bzipped)
-# @param bz2_enabled indicates whether the data is encoded with bz2 
+# @param bz2_enabled indicates whether the data is encoded with bz2
 # @returns output dict
 # @throws ValueError if the .config is malformed
 def scanConfig(configdata, bz2_enabled):
@@ -193,7 +192,7 @@ def genCSV(output):
             printProgress(100)
             first = False
             print("")
-            
+
         except MySQLdb.Error as err:
             print("\nError : Can't read from db : {}".format(err.args[1]))
             continue
@@ -202,7 +201,8 @@ def genCSV(output):
 
     print("CSV file generated at " + output)
 
-if __name__ == "__main__":  
+
+if __name__ == "__main__":
     if len(sys.argv) < 2:
             print("No output file specified")
             exit(-1)
